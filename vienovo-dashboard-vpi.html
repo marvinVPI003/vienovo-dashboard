@@ -344,8 +344,9 @@
         async function loadData() {
             showStatus('⟳ Loading data...', 'loading');
             try {
-                console.log('Fetching from /api/data...');
-                const response = await fetch('/api/data');
+                const backendUrl = 'https://vienovo-dashboard.onrender.com/api/data';
+                console.log('Fetching from:', backendUrl);
+                const response = await fetch(backendUrl);
                 console.log('Response status:', response.status);
 
                 if (!response.ok) {
@@ -360,7 +361,7 @@
                 renderDashboard();
             } catch (error) {
                 console.error('Full error:', error);
-                showStatus(`❌ Error: ${error.message}`, 'error');
+                showStatus(`❌ Error: ${error.message}. Backend: https://vienovo-dashboard.onrender.com`, 'error');
             }
         }
 
