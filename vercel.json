@@ -1,20 +1,10 @@
 {
   "buildCommand": "npm install",
-  "devCommand": "node vienovo-backend.js",
   "installCommand": "npm install",
-  "env": {
-    "NODE_ENV": "production"
-  },
   "functions": {
-    "vienovo-backend.js": {
+    "api/data.js": {
       "memory": 1024,
       "maxDuration": 60
     }
-  },
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/"
-    }
-  ]
+  }
 }
