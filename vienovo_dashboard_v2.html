@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vienovo Production Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --vienovo-blue: #0052A3;
+            --vienovo-light-blue: #003D7A;
+            --vienovo-green: #4CAF50;
+            --vienovo-gold: #FFC107;
+            --vienovo-light: #F5F5F5;
+            --text-primary: #1F2937;
+            --text-secondary: #6B7280;
+            --border-color: #E5E7EB;
+            --danger: #EF4444;
+            --warning: #F59E0B;
+            --success: #10B981;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #F9FAFB;
+            color: var(--text-primary);
+        }
+
+        .dashboard {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 250px;
+            background: var(--vienovo-blue);
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
+            position: fixed;
+            height: 100vh;
+            left: 0;
+            top: 0;
+        }
+
+        .sidebar-logo {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .nav-item {
+            padding: 12px 15px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: background 0.3s;
+            font-size: 14px;
+        }
+
+        .nav-item:hover {
+            background: var(--vienovo-light-blue);
+        }
+
+        .nav-item.active {
+            background: var(--vienovo-gold);
+            color: var(--vienovo-blue);
+            font-weight: bold;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 250px;
+            flex: 1;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: var(--vienovo-blue);
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 15px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        select {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .tab-button {
+            padding: 10px 20px;
+            border: none;
+            background: var(--vienovo-light);
+            cursor: pointer;
+            border-radius: 4px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .tab-button.active {
+            background: var(--vienovo-blue);
+            color: white;
+        }
+
+        /* KPI Cards */
+        .kpi-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .kpi-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--vienovo-blue);
+        }
+
+        .kpi-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .kpi-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--vienovo-blue);
+        }
+
+        .kpi-unit {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        /* Sections */
+        .section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--vienovo-blue);
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--vienovo-gold);
+            padding-bottom: 10px;
+        }
+
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th {
+            background: var(--vienovo-light);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--vienovo-blue);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        tr:hover {
+            background: var(--vienovo-light);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+
+        /* Status Indicators */
+        .status-good {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .status-warning {
+            color: var(--warning);
+            font-weight: 600;
+        }
+
+        .status-danger {
+            color: var(--danger);
+            font-weight: 600;
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .error {
+            background: #FEE2E2;
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .success {
+            background: #DCFCE7;
+            border: 1px solid var(--success);
+            color: var(--success);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin-top: 40px;
+        }
+
+        .last-update {
+            padding: 10px 20px;
+            background: var(--vienovo-light);
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .header-controls {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .kpi-section {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-logo">📊 VIENOVO</div>
+            <div class="sidebar-nav">
+                <div class="nav-item active" data-section="overview">Overview</div>
+                <div class="nav-item" data-section="production">Production</div>
+                <div class="nav-item" data-section="quality">Quality & Rejection</div>
+                <div class="nav-item" data-section="costs">Production Costs</div>
+                <div class="nav-item" data-section="consumption">Resource Consumption</div>
+                <div class="nav-item" data-section="downtime">Downtime</div>
+                <div class="nav-item" data-section="oee">OEE Metrics</div>
+                <div class="nav-item" data-section="safety">Safety</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <div>
+                    <h1 id="headerTitle">Production Dashboard</h1>
+                    <div class="last-update" id="lastUpdate">Loading data...</div>
+                </div>
+                <div class="header-controls">
+                    <div class="control-group">
+                        <label>Plant / Location</label>
+                        <select id="plantSelect">
+                            <option value="NATIONAL">National</option>
+                            <option value="AC">AC</option>
+                            <option value="PFMIS">PFMIS</option>
+                            <option value="HOREB">Horeb</option>
+                            <option value="ARGAO">Argao</option>
+                            <option value="BUKID">Bukid</option>
+                            <option value="CCPC">CCPC (Tolling)</option>
+                            <option value="SOUTH">South (Tolling)</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Time Period</label>
+                        <select id="timePeriodSelect">
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error Message -->
+            <div id="errorMessage" class="error" style="display:none;"></div>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab-button active" data-tab="overview">Daily Summary</button>
+                <button class="tab-button" data-tab="weekly">Weekly Trends</button>
+                <button class="tab-button" data-tab="monthly">Monthly Analysis</button>
+            </div>
+
+            <!-- OVERVIEW SECTION -->
+            <div id="overview" class="section active">
+                <div class="kpi-section" id="kpiCards">
+                    <div class="kpi-card">
+                        <div class="kpi-label">Total Production</div>
+                        <div class="kpi-value" id="kpiProduction">--</div>
+                        <div class="kpi-unit">MT</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Capacity Utilization</div>
+                        <div class="kpi-value" id="kpiCapacity">--</div>
+                        <div class="kpi-unit">%</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Rejection Rate</div>
+                        <div class="kpi-value status-danger" id="kpiRejection">--</div>
+                        <div class="kpi-unit">%</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Production Cost/Ton</div>
+                        <div class="kpi-value" id="kpiCost">--</div>
+                        <div class="kpi-unit">PHP</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">OEE</div>
+                        <div class="kpi-value" id="kpiOEE">--</div>
+                        <div class="kpi-unit">%</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Downtime</div>
+                        <div class="kpi-value" id="kpiDowntime">--</div>
+                        <div class="kpi-unit">hrs</div>
+                    </div>
+                </div>
+
+                <div class="section-title">Daily Production by Product Type</div>
+                <div class="table-container">
+                    <table id="dailyProductionTable">
+                        <thead>
+                            <tr>
+                                <th>Plant</th>
+                                <th>Complete Feeds (MT)</th>
+                                <th>Mixgrain (MT)</th>
+                                <th>Repack (MT)</th>
+                                <th>Vietop (MT)</th>
+                                <th>Total (MT)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dailyProductionBody">
+                            <tr><td colspan="6" class="loading">Loading data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- PRODUCTION SECTION -->
+            <div id="production" class="section">
+                <div class="section-title">Production Output & Trends</div>
+                <div class="chart-container">
+                    <canvas id="productionTrendChart"></canvas>
+                </div>
+                <div class="table-container">
+                    <table id="productionDetailsTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Plant</th>
+                                <th>Product Type</th>
+                                <th>Volume (MT)</th>
+                                <th>% of Daily</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="5" class="loading">Loading data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- QUALITY SECTION -->
+            <div id="quality" class="section">
+                <div class="section-title">Quality & Rejection Metrics</div>
+                <div class="chart-container">
+                    <canvas id="rejectionTrendChart"></canvas>
+                </div>
+                <div class="table-container">
+                    <table id="rejectionTable">
+                        <thead>
+                            <tr>
+                                <th>Plant</th>
+                                <th>Date</th>
+                                <th>Rejection Count</th>
+                                <th>Rejection Rate (%)</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rejectionBody">
+                            <tr><td colspan="5" class="loading">Loading data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- COSTS SECTION -->
+            <div id="costs" class="section">
+                <div class="section-title">Production Cost Analysis</div>
+                <div class="chart-container">
+                    <canvas id="costBreakdownChart"></canvas>
+                </div>
+                <div class="table-container">
+                    <table id="costTable">
+                        <thead>
+                            <tr>
+                                <th>Plant</th>
+                                <th>Date</th>
+                                <th>Fixed Cost</th>
+                                <th>Variable Cost</th>
+                                <th>Total Cost</th>
+                                <th>Cost/Ton (PHP)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="costBody">
+                            <tr><td colspan="6" class="loading">Loading data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- CONSUMPTION SECTION -->
+            <div id="consumption" class="section">
+                <div class="section-title">Resource Consumption</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <h3 style="color: var(--vienovo-blue); margin-bottom: 15px;">Fuel Consumption</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Plant</th>
+                                        <th>Liters</th>
+                                        <th>L/Ton</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fuelBody">
+                                    <tr><td colspan="3" class="loading">Loading data...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="color: var(--vienovo-blue); margin-bottom: 15px;">Electricity Consumption</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Plant</th>
+                                        <th>kWh</th>
+                                        <th>kWh/Ton</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="powerBody">
+                                    <tr><td colspan="3" class="loading">Loading data...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DOWNTIME SECTION -->
+            <div id="downtime" class="section">
+                <div class="section-title">Downtime & Maintenance Log</div>
+                <div class="table-container">
+                    <table id="downtimeTable">
+                        <thead>
+                            <tr>
+                                <th>Plant</th>
+                                <th>Date</th>
+                                <th>Scheduled DT (hrs)</th>
+                                <th>Unscheduled DT (hrs)</th>
+                                <th>Issue/Reason</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="downtimeBody">
+                            <tr><td colspan="6" class="loading">Loading data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- OEE SECTION -->
+            <div id="oee" class="section">
+                <div class="section-title">OEE - Overall Equipment Effectiveness</div>
+                <div class="kpi-section">
+                    <div class="kpi-card">
+                        <div class="kpi-label">Availability</div>
+                        <div class="kpi-value" id="oeeAvailability">--</div>
+                        <div class="kpi-unit">%</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Performance</div>
+                        <div class="kpi-value" id="oeePerformance">--</div>
+                        <div class="kpi-unit">%</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Quality</div>
+                        <div class="kpi-value" id="oeeQuality">--</div>
+                        <div class="kpi-unit">%</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Total OEE</div>
+                        <div class="kpi-value" id="oeTotal">--</div>
+                        <div class="kpi-unit">%</div>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="oeeChart"></canvas>
+                </div>
+            </div>
+
+            <!-- SAFETY SECTION -->
+            <div id="safety" class="section">
+                <div class="section-title">Safety Metrics</div>
+                <div class="kpi-section">
+                    <div class="kpi-card">
+                        <div class="kpi-label">Days Without Accident</div>
+                        <div class="kpi-value status-good" id="safetyDays">--</div>
+                        <div class="kpi-unit">days</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Incidents This Month</div>
+                        <div class="kpi-value" id="safetyIncidents">0</div>
+                        <div class="kpi-unit">count</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Near Miss Reports</div>
+                        <div class="kpi-value" id="safetyNearMiss">0</div>
+                        <div class="kpi-unit">count</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+                <p>Vienovo Production Dashboard v2.0 | For inquiries, contact Operations</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dashboard Configuration
+        const API_URL = 'https://script.google.com/a/macros/vienovo.ph/s/AKfycbz03C7cLosMAy7Q8-cKLlol7R-DgodMxm5R8HJni9AyVYFVieEWuIKpS6BsqBDZUyV2/exec';
+        let dashboardData = null;
+        let charts = {};
+
+        // Initialize Dashboard
+        document.addEventListener('DOMContentLoaded', () => {
+            setupEventListeners();
+            loadData();
+        });
+
+        function setupEventListeners() {
+            // Sidebar navigation
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                    e.target.classList.add('active');
+                    const section = e.target.dataset.section;
+                    showSection(section);
+                });
+            });
+
+            // Tabs
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    const tab = e.target.dataset.tab;
+                    showSection(tab);
+                });
+            });
+
+            // Filters
+            document.getElementById('plantSelect').addEventListener('change', updateDashboard);
+            document.getElementById('timePeriodSelect').addEventListener('change', updateDashboard);
+        }
+
+        function loadData() {
+            if (!API_URL || API_URL.includes('YOUR_GOOGLE')) {
+                showError('⚠️ API URL not configured. Please update the API_URL in the script.');
+                loadMockData();
+                return;
+            }
+
+            fetch(API_URL)
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    dashboardData = data;
+                    updateDashboard();
+                    updateTimestamp();
+                })
+                .catch(error => {
+                    console.error('Data loading error:', error);
+                    showError(`Failed to load data: ${error.message}`);
+                    loadMockData();
+                });
+        }
+
+        function loadMockData() {
+            // Load mock data for testing/demo purposes
+            dashboardData = {
+                timestamp: new Date().toISOString(),
+                plants: ['NATIONAL', 'AC', 'PFMIS', 'HOREB', 'ARGAO', 'BUKID', 'CCPC', 'SOUTH'],
+                daily: {
+                    'NATIONAL': {
+                        production: { totalVolume: 850, pellet: 400, crumble: 300, mixgrain: 150 },
+                        costs: { variableCost: 425000, fixedCost: 85000, mcosPerTon: 600 },
+                        downtime: { scheduledDowntime: 2, unscheduledDowntime: 1 }
+                    },
+                    'AC': {
+                        production: { totalVolume: 250, pellet: 120, crumble: 90, mixgrain: 40 },
+                        costs: { variableCost: 125000, fixedCost: 25000, mcosPerTon: 600 }
+                    }
+                }
+            };
+            updateDashboard();
+            updateTimestamp();
+        }
+
+        function updateDashboard() {
+            const plant = document.getElementById('plantSelect').value;
+            const timePeriod = document.getElementById('timePeriodSelect').value;
+
+            if (!dashboardData) return;
+
+            const plantData = dashboardData.daily?.[plant];
+            if (!plantData) return;
+
+            // Update KPI Cards
+            const prod = plantData.production || {};
+            document.getElementById('kpiProduction').textContent = (prod.totalVolume || 0).toFixed(1);
+            document.getElementById('kpiCapacity').textContent = '75';
+            document.getElementById('kpiRejection').textContent = '2.5';
+            document.getElementById('kpiCost').textContent = (plantData.costs?.mcosPerTon || 600).toFixed(0);
+            document.getElementById('kpiOEE').textContent = '82';
+            document.getElementById('kpiDowntime').textContent = plantData.downtime?.unscheduledDowntime || 0;
+
+            // Update Production Table
+            updateProductionTable(plant);
+        }
+
+        function updateProductionTable(plant) {
+            const body = document.getElementById('dailyProductionBody');
+            body.innerHTML = '';
+
+            if (dashboardData?.daily?.[plant]) {
+                const data = dashboardData.daily[plant];
+                const prod = data.production || {};
+                const row = `
+                    <tr>
+                        <td><strong>${plant}</strong></td>
+                        <td>${(prod.pellet || 0).toFixed(1)}</td>
+                        <td>${(prod.mixgrain || 0).toFixed(1)}</td>
+                        <td>${(prod.crumble || 0).toFixed(1)}</td>
+                        <td>0</td>
+                        <td><strong>${(prod.totalVolume || 0).toFixed(1)}</strong></td>
+                    </tr>
+                `;
+                body.innerHTML = row;
+            }
+        }
+
+        function showSection(section) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            const el = document.getElementById(section);
+            if (el) {
+                el.classList.add('active');
+                document.getElementById('headerTitle').textContent =
+                    section.charAt(0).toUpperCase() + section.slice(1);
+            }
+        }
+
+        function updateTimestamp() {
+            const now = new Date();
+            document.getElementById('lastUpdate').textContent =
+                `Last updated: ${now.toLocaleString()}`;
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

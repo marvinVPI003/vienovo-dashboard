@@ -1,0 +1,146 @@
+================================================================================
+VIENOVO DASHBOARD - QUICK START COMMANDS
+================================================================================
+
+Location: D:\Profile\Documents\Claude\Projects\Operation Dashboard
+
+================================================================================
+STEP 1: OPEN TERMINAL HERE
+================================================================================
+
+Option A (Windows):
+1. Hold SHIFT + Right-click in the folder
+2. Select "Open PowerShell window here"
+
+Option B (Windows Command Prompt):
+1. Press Windows+R
+2. Type: cmd
+3. Type: cd "D:\Profile\Documents\Claude\Projects\Operation Dashboard"
+
+Option C (Any OS):
+Use your file explorer to navigate to this folder, then open terminal from there
+
+================================================================================
+STEP 2: INSTALL DEPENDENCIES (First time only)
+================================================================================
+
+Type this command and press Enter:
+
+    npm install
+
+⏳ Wait 1-2 minutes while packages download...
+
+You should see:
+    added 57 packages, and audited 58 packages in 45s
+
+================================================================================
+STEP 3: START THE BACKEND SERVER
+================================================================================
+
+Type this command:
+
+    npm start
+
+You should see:
+    🚀 Vienovo Dashboard Backend running on http://localhost:3000
+    📊 API: http://localhost:3000/api/data
+    🏭 Plant API: http://localhost:3000/api/plant/AC
+    💚 Health: http://localhost:3000/health
+
+✅ If you see this, your server is running! Keep this terminal open.
+
+================================================================================
+STEP 4: TEST THE BACKEND (In a NEW terminal or browser)
+================================================================================
+
+Open your web browser and go to:
+
+    http://localhost:3000/api/data
+
+You should see JSON data. If you do, your backend is working! ✅
+
+================================================================================
+STEP 5: OPEN THE DASHBOARD
+================================================================================
+
+In the same folder, find and open this file:
+
+    vienovo_dashboard_final.html
+
+Double-click it to open in your default browser.
+
+Alternative: In browser address bar, paste:
+    file:///D:/Profile/Documents/Claude/Projects/Operation%20Dashboard/vienovo_dashboard_final.html
+
+================================================================================
+WHAT YOU SHOULD SEE
+================================================================================
+
+✅ Dashboard loads with colored KPI cards
+✅ Shows numbers for Production, Cost, Quality, OEE
+✅ 8 tabs available (Overview, Production, Quality, etc.)
+✅ Tables and charts populate with data
+✅ Plant selector works
+✅ Auto-refreshes every 30 seconds
+
+================================================================================
+IF SOMETHING GOES WRONG
+================================================================================
+
+Dashboard shows "Loading..." forever?
+→ Check browser console (F12) for error messages
+→ Make sure npm start shows the startup messages
+→ Try http://localhost:3000/api/data in browser
+
+Port 3000 already in use?
+→ Windows: netstat -ano | findstr :3000
+          taskkill /PID [number] /F
+→ Mac: lsof -ti:3000 | xargs kill -9
+
+No data showing?
+→ Open http://localhost:3000/api/data in browser
+→ If blank, check your Google Sheet has data
+→ Share what you see and I'll help
+
+================================================================================
+KEEP IT RUNNING
+================================================================================
+
+✅ Keep the "npm start" terminal window open while using dashboard
+✅ Leave it running in background
+✅ Dashboard auto-refreshes every 30 seconds
+✅ Just close terminal when done for the day
+
+================================================================================
+READY FOR CEO PRESENTATION?
+================================================================================
+
+Once data is loaded:
+1. Click "Generate PDF Report" to create presentation slides
+2. Use Plant Comparison view for benchmarking
+3. Show live dashboard for real-time Q&A during COMEX meeting
+
+================================================================================
+FILES YOU NEED
+================================================================================
+
+✅ backend_server.js          (Backend - already created)
+✅ package.json               (Dependencies - already created)
+✅ vienovo_dashboard_final.html  (Frontend - already created)
+✅ START_SERVER.md            (Detailed guide)
+✅ SETUP_AND_TEST.md          (Full troubleshooting)
+
+================================================================================
+SUPPORT
+================================================================================
+
+Review these files if you have issues:
+1. SETUP_AND_TEST.md - Full troubleshooting guide
+2. Browser Console (F12) - Error messages
+3. http://localhost:3000/api/data - Check raw data
+
+Share error messages and I'll fix them immediately!
+
+================================================================================
+Your dashboard is ready. Let's get it running! 🚀
+================================================================================

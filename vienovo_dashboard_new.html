@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vienovo Operations Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f0f2f5;
+            color: #333;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, #0052A3 0%, #003d7a 100%);
+            color: white;
+            padding: 30px 20px;
+            overflow-y: auto;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+        }
+
+        .sidebar-header {
+            margin-bottom: 30px;
+        }
+
+        .company-name {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .company-tagline {
+            font-size: 11px;
+            opacity: 0.85;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .user-info {
+            background: rgba(255,255,255,0.1);
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+            font-size: 12px;
+            border-left: 3px solid #FFC107;
+        }
+
+        .user-name { font-weight: 600; margin-bottom: 2px; }
+        .user-role { opacity: 0.8; font-size: 11px; }
+
+        .nav-section { margin-bottom: 20px; }
+        .nav-label { font-size: 10px; font-weight: 700; text-transform: uppercase; opacity: 0.6; margin-bottom: 10px; letter-spacing: 0.5px; }
+
+        .time-selector {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            background: rgba(255,255,255,0.1);
+            padding: 6px;
+            border-radius: 5px;
+        }
+
+        .time-btn {
+            flex: 1;
+            padding: 6px;
+            background: transparent;
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .time-btn.active {
+            background: #FFC107;
+            color: #0052A3;
+            border-color: #FFC107;
+        }
+
+        .time-btn:hover { background: rgba(255,255,255,0.15); }
+
+        .nav-item {
+            padding: 10px 12px;
+            margin-bottom: 6px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover { background: rgba(255,255,255,0.1); }
+        .nav-item.active {
+            background: rgba(255,193,7,0.2);
+            border-left-color: #FFC107;
+            font-weight: 600;
+        }
+
+        .nav-icon { font-size: 16px; }
+
+        /* MAIN */
+        .main-content { flex: 1; display: flex; flex-direction: column; }
+
+        .header {
+            background: white;
+            padding: 20px 40px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .header-title { font-size: 24px; font-weight: 700; color: #0052A3; }
+
+        .header-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        select, button {
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        select { background: white; }
+        button { background: #0052A3; color: white; border: none; font-weight: 600; }
+        button:hover { background: #003d7a; }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px 40px;
+        }
+
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+
+        .status-msg {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            border-left: 4px solid;
+        }
+
+        .status-loading { background: #fff3cd; color: #856404; border-left-color: #FFC107; }
+        .status-error { background: #f8d7da; color: #721c24; border-left-color: #dc3545; }
+        .status-success { background: #d4edda; color: #155724; border-left-color: #28a745; }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .kpi-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            border-left: 4px solid #0052A3;
+            transition: transform 0.2s;
+        }
+
+        .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.12); }
+
+        .kpi-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 8px; letter-spacing: 0.5px; }
+        .kpi-value { font-size: 32px; font-weight: 700; color: #0052A3; margin-bottom: 4px; }
+        .kpi-unit { font-size: 12px; color: #999; }
+
+        .data-table {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            overflow: hidden;
+            margin-bottom: 25px;
+        }
+
+        .table-header { background: #f8f9fa; padding: 18px 20px; border-bottom: 1px solid #e0e0e0; font-size: 16px; font-weight: 700; color: #333; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { padding: 12px 20px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #666; border-bottom: 2px solid #e0e0e0; background: #f8f9fa; }
+        td { padding: 12px 20px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+        tbody tr:hover { background: #f9fafb; }
+        .text-right { text-align: right; }
+
+        @media (max-width: 1024px) {
+            .sidebar { width: 250px; }
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 768px) {
+            .container { flex-direction: column; }
+            .sidebar { width: 100%; }
+            .kpi-grid { grid-template-columns: 1fr; }
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #999; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="company-name">VIENOVO</div>
+                <div class="company-tagline">Operations Dashboard</div>
+            </div>
+
+            <div class="user-info">
+                <div class="user-name">Marv Rosario</div>
+                <div class="user-role">Operations Manager</div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-label">View Period</div>
+                <div class="time-selector">
+                    <button class="time-btn active" onclick="setPeriod('daily')">Daily</button>
+                    <button class="time-btn" onclick="setPeriod('weekly')">Weekly</button>
+                    <button class="time-btn" onclick="setPeriod('monthly')">Monthly</button>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-label">Dashboard</div>
+                <div class="nav-item active" onclick="switchView('overview')">
+                    <span class="nav-icon">📊</span>
+                    <span>Dashboard</span>
+                </div>
+                <div class="nav-item" onclick="switchView('production')">
+                    <span class="nav-icon">📈</span>
+                    <span>Production</span>
+                </div>
+                <div class="nav-item" onclick="switchView('quality')">
+                    <span class="nav-icon">⭐</span>
+                    <span>Quality</span>
+                </div>
+                <div class="nav-item" onclick="switchView('downtime')">
+                    <span class="nav-icon">⏱️</span>
+                    <span>Downtime</span>
+                </div>
+                <div class="nav-item" onclick="switchView('resources')">
+                    <span class="nav-icon">🔌</span>
+                    <span>Resources</span>
+                </div>
+                <div class="nav-item" onclick="switchView('capacity')">
+                    <span class="nav-icon">📊</span>
+                    <span>Capacity</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            <div class="header">
+                <div class="header-title">Dashboard</div>
+                <div class="header-controls">
+                    <select id="plantSelector" onchange="updateView()">
+                        <option value="">All Plants</option>
+                        <option value="AC">AC (Laguna)</option>
+                        <option value="PFMIS">PFMIS</option>
+                        <option value="HOREB">HOREB</option>
+                        <option value="ARGAO">ARGAO</option>
+                        <option value="BUKID">BUKID</option>
+                        <option value="CCPC">CCPC</option>
+                        <option value="SOUTH">SOUTH</option>
+                    </select>
+                    <button onclick="loadData()">⟳ Live</button>
+                </div>
+            </div>
+
+            <div class="content">
+                <div id="statusMsg"></div>
+
+                <!-- OVERVIEW -->
+                <div class="content-section active" id="overview">
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-label">Production Output</div>
+                            <div class="kpi-value" id="prod-output">—</div>
+                            <div class="kpi-unit">MT</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Capacity Utilization</div>
+                            <div class="kpi-value" id="cap-util">—</div>
+                            <div class="kpi-unit">%</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Quality Score</div>
+                            <div class="kpi-value" id="qual-score">—</div>
+                            <div class="kpi-unit">%</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Total Downtime</div>
+                            <div class="kpi-value" id="dt-total">—</div>
+                            <div class="kpi-unit">hrs</div>
+                        </div>
+                    </div>
+
+                    <div class="data-table">
+                        <div class="table-header">Daily Summary</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Plant</th>
+                                    <th class="text-right">Date</th>
+                                    <th class="text-right">Output (MT)</th>
+                                    <th class="text-right">Capacity %</th>
+                                    <th class="text-right">Rejection %</th>
+                                    <th class="text-right">Downtime (hrs)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="summaryTable">
+                                <tr><td colspan="6" style="text-align:center; padding: 30px;">Click "Live" to load data</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- PRODUCTION -->
+                <div class="content-section" id="production">
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-label">Daily Output</div>
+                            <div class="kpi-value" id="prod-daily">—</div>
+                            <div class="kpi-unit">MT</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Weekly Output</div>
+                            <div class="kpi-value" id="prod-weekly">—</div>
+                            <div class="kpi-unit">MT</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Monthly Output</div>
+                            <div class="kpi-value" id="prod-monthly">—</div>
+                            <div class="kpi-unit">MT</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QUALITY -->
+                <div class="content-section" id="quality">
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-label">Quality Score</div>
+                            <div class="kpi-value" id="qual-score2">—</div>
+                            <div class="kpi-unit">%</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Rejection Rate</div>
+                            <div class="kpi-value" id="qual-reject">—</div>
+                            <div class="kpi-unit">%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DOWNTIME -->
+                <div class="content-section" id="downtime">
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-label">Total Downtime</div>
+                            <div class="kpi-value" id="dt-total2">—</div>
+                            <div class="kpi-unit">hrs</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Downtime Rate</div>
+                            <div class="kpi-value" id="dt-rate">—</div>
+                            <div class="kpi-unit">%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RESOURCES -->
+                <div class="content-section" id="resources">
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-label">Total kWh</div>
+                            <div class="kpi-value" id="res-kwh">—</div>
+                            <div class="kpi-unit">kWh</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">kWh per Ton</div>
+                            <div class="kpi-value" id="res-kwh-ton">—</div>
+                            <div class="kpi-unit">kWh/ton</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Total Fuel</div>
+                            <div class="kpi-value" id="res-fuel">—</div>
+                            <div class="kpi-unit">Liters</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Fuel per Ton</div>
+                            <div class="kpi-value" id="res-fuel-ton">—</div>
+                            <div class="kpi-unit">L/ton</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CAPACITY -->
+                <div class="content-section" id="capacity">
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-label">Capacity Utilization</div>
+                            <div class="kpi-value" id="cap-util2">—</div>
+                            <div class="kpi-unit">%</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Plant Utilization</div>
+                            <div class="kpi-value" id="plant-util">—</div>
+                            <div class="kpi-unit">%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CSV_URLS = {
+            mr: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRRx7S_rqgygPQifVep4DtnDFK8gGjAPVbrzCq6sCJcTF6omIGXb73iK8mQZoZjOgUq8CnZ9t7fR_2a/pub?gid=749345665&single=true&output=csv',
+            pc: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRRx7S_rqgygPQifVep4DtnDFK8gGjAPVbrzCq6sCJcTF6omIGXb73iK8mQZoZjOgUq8CnZ9t7fR_2a/pub?gid=180375750&single=true&output=csv',
+            mcos: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRRx7S_rqgygPQifVep4DtnDFK8gGjAPVbrzCq6sCJcTF6omIGXb73iK8mQZoZjOgUq8CnZ9t7fR_2a/pub?gid=960402999&single=true&output=csv',
+            downtime: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRRx7S_rqgygPQifVep4DtnDFK8gGjAPVbrzCq6sCJcTF6omIGXb73iK8mQZoZjOgUq8CnZ9t7fR_2a/pub?gid=2030930278&single=true&output=csv'
+        };
+
+        const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+        let allData = { mr: [], pc: [], mcos: [], downtime: [] };
+
+        function showStatus(msg, type) {
+            const el = document.getElementById('statusMsg');
+            el.className = `status-msg status-${type}`;
+            el.textContent = msg;
+        }
+
+        function parseCSV(csv) {
+            const lines = csv.trim().split('\n');
+            const headers = lines[0].split(',').map(h => h.trim());
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                const values = lines[i].split(',');
+                const row = {};
+                headers.forEach((h, idx) => {
+                    row[h] = values[idx] ? values[idx].trim() : '';
+                });
+                data.push(row);
+            }
+            return data;
+        }
+
+        async function fetchData(name, url) {
+            const proxyUrl = CORS_PROXY + encodeURIComponent(url);
+            const response = await fetch(proxyUrl);
+            if (!response.ok) throw new Error(`Failed to fetch ${name}`);
+            const csv = await response.text();
+            return parseCSV(csv);
+        }
+
+        async function loadData() {
+            showStatus('⟳ Loading data from Google Sheets...', 'loading');
+            try {
+                const [mr, pc, mcos, downtime] = await Promise.all([
+                    fetchData('MR Daily', CSV_URLS.mr),
+                    fetchData('PC Daily', CSV_URLS.pc),
+                    fetchData('MCOS Daily', CSV_URLS.mcos),
+                    fetchData('Downtime', CSV_URLS.downtime)
+                ]);
+
+                allData = { mr, pc, mcos, downtime };
+                const total = mr.length + pc.length + mcos.length + downtime.length;
+                showStatus(`✓ Loaded ${total} records from 4 sources`, 'success');
+                updateView();
+            } catch (error) {
+                showStatus(`❌ Error: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+
+        function switchView(view) {
+            document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(view).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            event.target.closest('.nav-item').classList.add('active');
+        }
+
+        function setPeriod(period) {
+            document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            updateView();
+        }
+
+        function getFilteredData(plant) {
+            let filtered = allData.mr;
+            if (plant) {
+                filtered = filtered.filter(r => r['Plant'] && r['Plant'].toUpperCase().includes(plant.toUpperCase()));
+            }
+            return filtered;
+        }
+
+        function updateView() {
+            const plant = document.getElementById('plantSelector').value;
+            const data = getFilteredData(plant);
+
+            if (data.length === 0) {
+                showStatus('⚠ No data available', 'error');
+                return;
+            }
+
+            const latest = data[data.length - 1];
+            const output = parseFloat(latest['Total Plant Output,mt']) || 0;
+            const capacity = parseFloat(latest['Capacity Utilization Rate,%']) || 0;
+            const rejection = parseFloat(latest['Rejection Rate, %']) || 0;
+            const quality = 100 - rejection;
+            const downtime = parseFloat(latest['Total Downtime, hr']) || 0;
+            const kwh = parseFloat(latest['Total kWh']) || 0;
+            const kwhTon = parseFloat(latest['kWh/ton']) || 0;
+            const fuel = parseFloat(latest['Total Fuel']) || 0;
+            const fuelTon = parseFloat(latest['Li/ton']) || 0;
+
+            // Overview
+            document.getElementById('prod-output').textContent = output.toFixed(0);
+            document.getElementById('cap-util').textContent = capacity.toFixed(0);
+            document.getElementById('qual-score').textContent = quality.toFixed(1);
+            document.getElementById('dt-total').textContent = downtime.toFixed(1);
+
+            // Production
+            const avg = data.reduce((s, r) => s + (parseFloat(r['Total Plant Output,mt']) || 0), 0) / data.length;
+            document.getElementById('prod-daily').textContent = avg.toFixed(1);
+            document.getElementById('prod-weekly').textContent = (avg * 7).toFixed(0);
+            document.getElementById('prod-monthly').textContent = (avg * 30).toFixed(0);
+
+            // Quality
+            document.getElementById('qual-score2').textContent = quality.toFixed(1);
+            document.getElementById('qual-reject').textContent = rejection.toFixed(1);
+
+            // Downtime
+            document.getElementById('dt-total2').textContent = downtime.toFixed(1);
+            document.getElementById('dt-rate').textContent = ((downtime / 24) * 100).toFixed(1);
+
+            // Resources
+            document.getElementById('res-kwh').textContent = kwh.toFixed(0);
+            document.getElementById('res-kwh-ton').textContent = kwhTon.toFixed(2);
+            document.getElementById('res-fuel').textContent = fuel.toFixed(0);
+            document.getElementById('res-fuel-ton').textContent = fuelTon.toFixed(2);
+
+            // Capacity
+            document.getElementById('cap-util2').textContent = capacity.toFixed(0);
+            document.getElementById('plant-util').textContent = capacity.toFixed(0);
+
+            // Summary Table
+            const rows = data.slice(-10).reverse().map(r => `
+                <tr>
+                    <td>${r['Plant']}</td>
+                    <td class="text-right">${r['Date']}</td>
+                    <td class="text-right">${(parseFloat(r['Total Plant Output,mt']) || 0).toFixed(1)}</td>
+                    <td class="text-right">${(parseFloat(r['Capacity Utilization Rate,%']) || 0).toFixed(0)}</td>
+                    <td class="text-right">${(parseFloat(r['Rejection Rate, %']) || 0).toFixed(1)}</td>
+                    <td class="text-right">${(parseFloat(r['Total Downtime, hr']) || 0).toFixed(1)}</td>
+                </tr>
+            `).join('');
+            document.getElementById('summaryTable').innerHTML = rows || '<tr><td colspan="6">No data</td></tr>';
+        }
+    </script>
+</body>
+</html>

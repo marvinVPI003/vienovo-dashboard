@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production Dashboard - Manual Data Input</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <style>
+        :root {
+            color-scheme: light;
+            --primary-color: #1e40af;
+            --secondary-color: #0891b2;
+            --success-color: #16a34a;
+            --warning-color: #ea580c;
+            --danger-color: #dc2626;
+            --light-bg: #f8fafc;
+            --border-color: #e2e8f0;
+            --text-dark: #1e293b;
+            --text-light: #64748b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--light-bg);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-bottom: 3px solid var(--primary-color);
+            margin-bottom: 30px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .header-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .date-display {
+            color: var(--text-light);
+            font-size: 1.1em;
+        }
+
+        .section {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .data-input-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .input-block {
+            padding: 20px;
+            background: var(--light-bg);
+            border-radius: 8px;
+            border: 2px solid var(--border-color);
+        }
+
+        .input-block h3 {
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            font-size: 1.1em;
+        }
+
+        .input-block label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.9em;
+            resize: vertical;
+        }
+
+        input[type="file"] {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1e3a8a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(30, 64, 175, 0.2);
+        }
+
+        .btn-secondary {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #0e7490;
+        }
+
+        .success-message {
+            padding: 15px;
+            background: #dcfce7;
+            border-left: 4px solid var(--success-color);
+            border-radius: 6px;
+            margin: 15px 0;
+            color: var(--success-color);
+            display: none;
+        }
+
+        .error-message {
+            padding: 15px;
+            background: #fee2e2;
+            border-left: 4px solid var(--danger-color);
+            border-radius: 6px;
+            margin: 15px 0;
+            color: var(--danger-color);
+            display: none;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            overflow-x: auto;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background: var(--light-bg);
+            color: var(--text-dark);
+            cursor: pointer;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .card h3 {
+            font-size: 0.85em;
+            color: var(--text-light);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .card .value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th {
+            background: var(--light-bg);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        tr:hover {
+            background: #f0f9ff;
+        }
+
+        .instructions {
+            background: #e0f2fe;
+            border-left: 4px solid var(--secondary-color);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            line-height: 1.8;
+        }
+
+        .instructions h4 {
+            color: var(--secondary-color);
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .data-input-area {
+                grid-template-columns: 1fr;
+            }
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>📊 Production Dashboard</h1>
+            <div class="header-info">
+                <span class="date-display" id="currentDate"></span>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">📥 Data Input - Choose Your Method</div>
+
+            <div class="instructions">
+                <h4>How to load your data:</h4>
+                <p><strong>Option 1: Copy & Paste from Google Sheets</strong></p>
+                <p>1. Go to your Google Sheet → Select the data you need (column headers + row data)</p>
+                <p>2. Copy (Ctrl+C or Cmd+C)</p>
+                <p>3. Paste in the text area below and click "Load Data"</p>
+                <p style="margin-top: 15px;"><strong>Option 2: Upload CSV File</strong></p>
+                <p>1. Export your data as CSV from Google Sheets</p>
+                <p>2. Select the CSV file below and click "Upload CSV"</p>
+            </div>
+
+            <div class="data-input-area">
+                <div class="input-block">
+                    <h3>Option 1: Paste Data</h3>
+                    <label for="dataInput">Paste your data here (from Google Sheets):</label>
+                    <textarea id="dataInput" placeholder="Paste tab-separated or comma-separated data here..."></textarea>
+                    <div class="button-group">
+                        <button class="btn-primary" onclick="loadPastedData()">Load Data</button>
+                        <button class="btn-secondary" onclick="clearInput()">Clear</button>
+                    </div>
+                </div>
+
+                <div class="input-block">
+                    <h3>Option 2: Upload CSV</h3>
+                    <label for="csvFile">Select CSV file:</label>
+                    <input type="file" id="csvFile" accept=".csv" onchange="loadCsvFile()">
+                    <p style="margin-top: 10px; font-size: 0.85em; color: var(--text-light);">Supported formats: CSV files from Google Sheets export</p>
+                </div>
+            </div>
+
+            <div id="successMessage" class="success-message"></div>
+            <div id="errorMessage" class="error-message"></div>
+        </div>
+
+        <!-- Main Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('production')">🏭 Production</button>
+            <button class="tab-btn" onclick="switchTab('quality')">✓ Quality</button>
+            <button class="tab-btn" onclick="switchTab('costs')">💰 Costs</button>
+            <button class="tab-btn" onclick="switchTab('resources')">⚡ Resources</button>
+        </div>
+
+        <!-- PRODUCTION TAB -->
+        <div id="production" class="tab-content active">
+            <div class="section">
+                <div class="section-title">Production Data</div>
+                <div class="summary-cards" id="productionCards">
+                    <div class="card">
+                        <h3>Complete Feeds</h3>
+                        <div class="value" id="completeFeedsVal">--</div>
+                    </div>
+                    <div class="card">
+                        <h3>Mixgrain</h3>
+                        <div class="value" id="mixgrainVal">--</div>
+                    </div>
+                    <div class="card">
+                        <h3>Vietop</h3>
+                        <div class="value" id="vietopVal">--</div>
+                    </div>
+                    <div class="card">
+                        <h3>Capacity %</h3>
+                        <div class="value" id="capacityVal">--</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 25px; margin-bottom: 15px;">Detailed Production Data</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            <th>Value</th>
+                            <th>Unit</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productionTable">
+                        <tr><td colspan="3" style="text-align: center;">No data loaded yet</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- QUALITY TAB -->
+        <div id="quality" class="tab-content">
+            <div class="section">
+                <div class="section-title">Quality & Rejection Data</div>
+                <div class="summary-cards">
+                    <div class="card">
+                        <h3>Rejection Rate</h3>
+                        <div class="value" id="rejectionVal">--</div>
+                    </div>
+                    <div class="card">
+                        <h3>Remill Reject</h3>
+                        <div class="value" id="remillVal">--</div>
+                    </div>
+                    <div class="card">
+                        <h3>Shrinkage</h3>
+                        <div class="value" id="shrinkageVal">--</div>
+                    </div>
+                    <div class="card">
+                        <h3>Loss/Gain %</h3>
+                        <div class="value" id="lossGainVal">--</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 25px; margin-bottom: 15px;">Quality Details</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="qualityTable">
+                        <tr><td colspan="2" style="text-align: center;">No data loaded yet</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- COSTS TAB -->
+        <div id="costs" class="tab-content">
+            <div class="section">
+                <div class="section-title">Production Costs</div>
+                <div class="summary-cards">
+                    <div class="card">
+                        <h3>MCOS</h3>
+                        <div class="value" id="mcosVal">--</div>
+                    </div>
+                    <div class="card">
+                        <h3>Fixed Cost</h3>
+                        <div class="value" id="fixedVal">--</div>
+                    </div>
+                    <div class="card">
+                        <h3>Variable Cost</h3>
+                        <div class="value" id="variableVal">--</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 25px; margin-bottom: 15px;">Cost Breakdown</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Cost Category</th>
+                            <th>Amount (₱)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="costTable">
+                        <tr><td colspan="2" style="text-align: center;">No data loaded yet</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- RESOURCES TAB -->
+        <div id="resources" class="tab-content">
+            <div class="section">
+                <div class="section-title">Resources Consumption</div>
+                <div class="summary-cards">
+                    <div class="card">
+                        <h3>Total KWh</h3>
+                        <div class="value" id="kwhVal">--</div>
+                    </div>
+                    <div class="card">
+                        <h3>KWh/Ton</h3>
+                        <div class="value" id="kwhTonVal">--</div>
+                    </div>
+                    <div class="card">
+                        <h3>Total Fuel</h3>
+                        <div class="value" id="fuelVal">--</div>
+                    </div>
+                    <div class="card">
+                        <h3>Fuel/Ton</h3>
+                        <div class="value" id="fuelTonVal">--</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 25px; margin-bottom: 15px;">Resource Details</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Resource</th>
+                            <th>Total</th>
+                            <th>Per Ton</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resourceTable">
+                        <tr><td colspan="3" style="text-align: center;">No data loaded yet</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let dashboardData = {};
+        const MR_COLUMNS = {
+            'Complete Feeds': 'BB',
+            'Mixgrain': 'BA',
+            'Vietop': 'AZ',
+            'Pellet Volume': 'BC',
+            'Crumble Volume': 'BD',
+            'Capacity Utilization': 'BN',
+            'Rejection Rate': 'BT',
+            'Remill Reject': 'BS',
+            'Shrinkage': 'CB',
+            'Process Loss/Gain': 'CC',
+            'Total KWh': 'CE',
+            'KWh/Ton': 'CF',
+            'Total Fuel': 'CG',
+            'Fuel/Ton': 'CH'
+        };
+
+        function updateDateTime() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('en-PH', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            document.getElementById('currentDate').textContent = dateStr;
+        }
+
+        function showMessage(message, isSuccess = true) {
+            const successEl = document.getElementById('successMessage');
+            const errorEl = document.getElementById('errorMessage');
+
+            if (isSuccess) {
+                successEl.textContent = '✓ ' + message;
+                successEl.style.display = 'block';
+                errorEl.style.display = 'none';
+            } else {
+                errorEl.textContent = '❌ ' + message;
+                errorEl.style.display = 'block';
+                successEl.style.display = 'none';
+            }
+
+            setTimeout(() => {
+                successEl.style.display = 'none';
+                errorEl.style.display = 'none';
+            }, 5000);
+        }
+
+        function parseData(text) {
+            // Try to parse as tab-separated or comma-separated
+            const lines = text.trim().split('\n');
+            if (lines.length === 0) throw new Error('No data provided');
+
+            const separator = text.includes('\t') ? '\t' : ',';
+            const data = [];
+
+            for (let line of lines) {
+                data.push(line.split(separator));
+            }
+
+            return data;
+        }
+
+        function loadPastedData() {
+            const input = document.getElementById('dataInput').value;
+            if (!input.trim()) {
+                showMessage('Please paste data first', false);
+                return;
+            }
+
+            try {
+                const data = parseData(input);
+                processData(data);
+                showMessage('Data loaded successfully!', true);
+            } catch (error) {
+                showMessage('Error parsing data: ' + error.message, false);
+            }
+        }
+
+        function loadCsvFile() {
+            const file = document.getElementById('csvFile').files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const csv = e.target.result;
+                    const data = Papa.parse(csv).data;
+                    processData(data);
+                    showMessage('CSV file loaded successfully!', true);
+                } catch (error) {
+                    showMessage('Error reading CSV: ' + error.message, false);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function processData(data) {
+            // Get the last row with data
+            const lastRow = data[data.length - 1];
+            if (!lastRow || lastRow.every(cell => !cell)) {
+                const secondLastRow = data[data.length - 2];
+                if (secondLastRow) {
+                    processRow(secondLastRow);
+                }
+            } else {
+                processRow(lastRow);
+            }
+        }
+
+        function processRow(row) {
+            // Simple assignment - user will need to ensure columns are in correct order
+            // Or we can add column mapping
+            dashboardData = {
+                completeFeedsVal: row[10] || '--',
+                mixgrainVal: row[11] || '--',
+                vietopVal: row[12] || '--',
+                capacityVal: row[13] || '--',
+                rejectionVal: row[14] || '--',
+                remillVal: row[15] || '--',
+                shrinkageVal: row[16] || '--',
+                lossGainVal: row[17] || '--',
+                kwhVal: row[18] || '--',
+                kwhTonVal: row[19] || '--',
+                fuelVal: row[20] || '--',
+                fuelTonVal: row[21] || '--',
+                mcosVal: row[22] || '--',
+                fixedVal: row[23] || '--',
+                variableVal: row[24] || '--'
+            };
+
+            updateUI();
+        }
+
+        function updateUI() {
+            // Update cards
+            document.getElementById('completeFeedsVal').textContent = dashboardData.completeFeedsVal;
+            document.getElementById('mixgrainVal').textContent = dashboardData.mixgrainVal;
+            document.getElementById('vietopVal').textContent = dashboardData.vietopVal;
+            document.getElementById('capacityVal').textContent = dashboardData.capacityVal + '%';
+            document.getElementById('rejectionVal').textContent = dashboardData.rejectionVal + '%';
+            document.getElementById('remillVal').textContent = dashboardData.remillVal;
+            document.getElementById('shrinkageVal').textContent = dashboardData.shrinkageVal;
+            document.getElementById('lossGainVal').textContent = dashboardData.lossGainVal + '%';
+            document.getElementById('kwhVal').textContent = dashboardData.kwhVal;
+            document.getElementById('kwhTonVal').textContent = dashboardData.kwhTonVal;
+            document.getElementById('fuelVal').textContent = dashboardData.fuelVal + 'L';
+            document.getElementById('fuelTonVal').textContent = dashboardData.fuelTonVal + 'L/ton';
+            document.getElementById('mcosVal').textContent = '₱' + dashboardData.mcosVal;
+            document.getElementById('fixedVal').textContent = '₱' + dashboardData.fixedVal;
+            document.getElementById('variableVal').textContent = '₱' + dashboardData.variableVal;
+
+            // Update tables
+            updateProductionTable();
+            updateQualityTable();
+            updateCostTable();
+            updateResourceTable();
+        }
+
+        function updateProductionTable() {
+            const html = `
+                <tr><td>Complete Feeds</td><td>${dashboardData.completeFeedsVal}</td><td>Tons</td></tr>
+                <tr><td>Mixgrain</td><td>${dashboardData.mixgrainVal}</td><td>Tons</td></tr>
+                <tr><td>Vietop</td><td>${dashboardData.vietopVal}</td><td>Tons</td></tr>
+                <tr><td>Capacity Utilization</td><td>${dashboardData.capacityVal}</td><td>%</td></tr>
+            `;
+            document.getElementById('productionTable').innerHTML = html;
+        }
+
+        function updateQualityTable() {
+            const html = `
+                <tr><td>Rejection Rate</td><td>${dashboardData.rejectionVal}%</td></tr>
+                <tr><td>Remill Reject</td><td>${dashboardData.remillVal} Tons</td></tr>
+                <tr><td>Total Shrinkage</td><td>${dashboardData.shrinkageVal} Tons</td></tr>
+                <tr><td>Process Loss/Gain</td><td>${dashboardData.lossGainVal}%</td></tr>
+            `;
+            document.getElementById('qualityTable').innerHTML = html;
+        }
+
+        function updateCostTable() {
+            const html = `
+                <tr><td>MCOS</td><td>₱${dashboardData.mcosVal}</td></tr>
+                <tr><td>Fixed Cost</td><td>₱${dashboardData.fixedVal}</td></tr>
+                <tr><td>Variable Cost</td><td>₱${dashboardData.variableVal}</td></tr>
+            `;
+            document.getElementById('costTable').innerHTML = html;
+        }
+
+        function updateResourceTable() {
+            const html = `
+                <tr><td>Electricity</td><td>${dashboardData.kwhVal} kWh</td><td>${dashboardData.kwhTonVal} kWh/Ton</td></tr>
+                <tr><td>Fuel</td><td>${dashboardData.fuelVal} L</td><td>${dashboardData.fuelTonVal} L/Ton</td></tr>
+            `;
+            document.getElementById('resourceTable').innerHTML = html;
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function clearInput() {
+            document.getElementById('dataInput').value = '';
+            document.getElementById('csvFile').value = '';
+        }
+
+        // Initialize
+        updateDateTime();
+    </script>
+</body>
+</html>
