@@ -577,9 +577,21 @@
                 }
 
                 dashData = await response.json();
+                console.log('Data loaded:', dashData);
+
+                // Validate data structure
+                if (!dashData.plantData || !dashData.oee || !dashData.downtime) {
+                    console.warn('Missing expected data fields:', {
+                        hasPlantData: !!dashData.plantData,
+                        hasOEE: !!dashData.oee,
+                        hasDowntime: !!dashData.downtime
+                    });
+                }
+
                 showStatus('✓ Data loaded successfully', 'success');
                 renderDashboard();
             } catch (error) {
+                console.error('Data load error:', error);
                 showStatus(`❌ Error: ${error.message}`, 'error');
             }
         }
@@ -641,37 +653,45 @@
             let totalOutput = 0, totalCompleteFeed = 0, totalCapacity = 0, totalQuality = 0, plantCount = 0;
 
             Object.values(plantData).forEach(plant => {
-                totalOutput += plant.production.total;
-                totalCompleteFeed += plant.production.completeFeedTotal;
-                totalCapacity += plant.quality.capacity;
-                totalQuality += plant.quality.quality;
+                if (plant && plant.production) {
+                    totalOutput += plant.production.total || 0;
+                    totalCompleteFeed += plant.production.completeFeedTotal || 0;
+                }
+                if (plant && plant.quality) {
+                    totalCapacity += plant.quality.capacity || 0;
+                    totalQuality += plant.quality.quality || 0;
+                }
                 plantCount++;
             });
 
             const expectedVolume = calculateExpectedVolume();
 
-            document.getElementById('national-output').textContent = totalOutput.toFixed(1);
-            document.getElementById('national-completefeed').textContent = totalCompleteFeed.toFixed(1);
-            document.getElementById('national-capacity').textContent = (totalCapacity / plantCount).toFixed(0);
-            document.getElementById('national-quality').textContent = (totalQuality / plantCount).toFixed(1);
-            document.getElementById('national-oee').textContent = oee.total.toFixed(1);
-            document.getElementById('national-expected').textContent = expectedVolume.toFixed(1);
+            document.getElementById('national-output').textContent = (totalOutput || 0).toFixed(1);
+            document.getElementById('national-completefeed').textContent = (totalCompleteFeed || 0).toFixed(1);
+            document.getElementById('national-capacity').textContent = plantCount > 0 ? (totalCapacity / plantCount).toFixed(0) : '—';
+            document.getElementById('national-quality').textContent = plantCount > 0 ? (totalQuality / plantCount).toFixed(1) : '—';
+            document.getElementById('national-oee').textContent = oee && oee.total ? oee.total.toFixed(1) : '—';
+            document.getElementById('national-expected').textContent = (expectedVolume || 0).toFixed(1);
 
             // Daily Production Table
             let dailyHtml = '';
             if (dailyProduction && dailyProduction.length > 0) {
                 dailyProduction.slice(-35).forEach(d => {
-                    dailyHtml += `<tr>
-                        <td>${d.plant}</td>
-                        <td>${d.date}</td>
-                        <td class="text-right">${d.vietop.toFixed(1)}</td>
-                        <td class="text-right">${d.mixgrain.toFixed(1)}</td>
-                        <td class="text-right">${d.pellet.toFixed(1)}</td>
-                        <td class="text-right">${d.crumble.toFixed(1)}</td>
-                        <td class="text-right">${d.mash.toFixed(1)}</td>
-                        <td class="text-right">${d.total.toFixed(1)}</td>
-                        <td class="text-right">${((d.total / d.capacity) * 100).toFixed(0)}%</td>
-                    </tr>`;
+                    if (d) {
+                        const capacity = d.capacity || 1;
+                        const capacityPct = capacity > 0 ? (((d.total || 0) / capacity) * 100).toFixed(0) : '—';
+                        dailyHtml += `<tr>
+                            <td>${d.plant || ''}</td>
+                            <td>${d.date || ''}</td>
+                            <td class="text-right">${(d.vietop || 0).toFixed(1)}</td>
+                            <td class="text-right">${(d.mixgrain || 0).toFixed(1)}</td>
+                            <td class="text-right">${(d.pellet || 0).toFixed(1)}</td>
+                            <td class="text-right">${(d.crumble || 0).toFixed(1)}</td>
+                            <td class="text-right">${(d.mash || 0).toFixed(1)}</td>
+                            <td class="text-right">${(d.total || 0).toFixed(1)}</td>
+                            <td class="text-right">${capacityPct}%</td>
+                        </tr>`;
+                    }
                 });
             }
             document.getElementById('dailyProductionTable').innerHTML = dailyHtml || '<tr><td colspan="9" style="text-align:center">No data</td></tr>';
@@ -679,147 +699,172 @@
             // Quality Table
             let qualityHtml = '';
             Object.entries(plantData).forEach(([plant, data]) => {
-                qualityHtml += `<tr>
-                    <td>${plant}</td>
-                    <td class="text-right">${data.quality.rejectionRate.toFixed(2)}%</td>
-                    <td class="text-right">${data.quality.quality.toFixed(1)}%</td>
-                    <td class="text-right">${data.quality.remillReject.toFixed(1)}</td>
-                    <td class="text-right">${data.quality.shrinkage.toFixed(2)}%</td>
-                </tr>`;
+                if (data && data.quality) {
+                    qualityHtml += `<tr>
+                        <td>${plant}</td>
+                        <td class="text-right">${(data.quality.rejectionRate || 0).toFixed(2)}%</td>
+                        <td class="text-right">${(data.quality.quality || 0).toFixed(1)}%</td>
+                        <td class="text-right">${(data.quality.remillReject || 0).toFixed(1)}</td>
+                        <td class="text-right">${(data.quality.shrinkage || 0).toFixed(2)}%</td>
+                    </tr>`;
+                }
             });
-            document.getElementById('qualityTable').innerHTML = qualityHtml;
+            document.getElementById('qualityTable').innerHTML = qualityHtml || '<tr><td colspan="5">No data</td></tr>';
 
             // Loss/Gain Table
             let lossgainHtml = '';
             Object.entries(plantData).forEach(([plant, data]) => {
-                lossgainHtml += `<tr>
-                    <td>${plant}</td>
-                    <td class="text-right">${data.quality.lossGain.toFixed(2)}%</td>
-                </tr>`;
+                if (data && data.quality) {
+                    lossgainHtml += `<tr>
+                        <td>${plant}</td>
+                        <td class="text-right">${(data.quality.lossGain || 0).toFixed(2)}%</td>
+                    </tr>`;
+                }
             });
-            document.getElementById('lossgainTable').innerHTML = lossgainHtml;
+            document.getElementById('lossgainTable').innerHTML = lossgainHtml || '<tr><td colspan="2">No data</td></tr>';
 
             // Fuel Table
             let fuelHtml = '';
             Object.entries(plantData).forEach(([plant, data]) => {
-                fuelHtml += `<tr>
-                    <td>${plant}</td>
-                    <td class="text-right">${data.utilities.fuel.toFixed(1)}</td>
-                    <td class="text-right">${data.utilities.fuelTon.toFixed(2)}</td>
-                </tr>`;
+                if (data && data.utilities) {
+                    fuelHtml += `<tr>
+                        <td>${plant}</td>
+                        <td class="text-right">${(data.utilities.fuel || 0).toFixed(1)}</td>
+                        <td class="text-right">${(data.utilities.fuelTon || 0).toFixed(2)}</td>
+                    </tr>`;
+                }
             });
-            document.getElementById('fuelTable').innerHTML = fuelHtml;
+            document.getElementById('fuelTable').innerHTML = fuelHtml || '<tr><td colspan="3">No data</td></tr>';
 
             // Power Table
             let powerHtml = '';
             Object.entries(plantData).forEach(([plant, data]) => {
-                powerHtml += `<tr>
-                    <td>${plant}</td>
-                    <td class="text-right">${data.utilities.kwh.toFixed(0)}</td>
-                    <td class="text-right">${data.utilities.kwhTon.toFixed(2)}</td>
-                </tr>`;
+                if (data && data.utilities) {
+                    powerHtml += `<tr>
+                        <td>${plant}</td>
+                        <td class="text-right">${(data.utilities.kwh || 0).toFixed(0)}</td>
+                        <td class="text-right">${(data.utilities.kwhTon || 0).toFixed(2)}</td>
+                    </tr>`;
+                }
             });
-            document.getElementById('powerTable').innerHTML = powerHtml;
+            document.getElementById('powerTable').innerHTML = powerHtml || '<tr><td colspan="3">No data</td></tr>';
 
             // Coal Table
             let coalHtml = '';
             Object.entries(plantData).forEach(([plant, data]) => {
-                coalHtml += `<tr>
-                    <td>${plant}</td>
-                    <td class="text-right">${data.utilities.coal.toFixed(0)}</td>
-                    <td class="text-right">${data.utilities.coalTon.toFixed(2)}</td>
-                </tr>`;
+                if (data && data.utilities) {
+                    coalHtml += `<tr>
+                        <td>${plant}</td>
+                        <td class="text-right">${(data.utilities.coal || 0).toFixed(0)}</td>
+                        <td class="text-right">${(data.utilities.coalTon || 0).toFixed(2)}</td>
+                    </tr>`;
+                }
             });
-            document.getElementById('coalTable').innerHTML = coalHtml;
+            document.getElementById('coalTable').innerHTML = coalHtml || '<tr><td colspan="3">No data</td></tr>';
 
             // Cost Table
             let costHtml = '';
             Object.entries(plantData).forEach(([plant, data]) => {
-                const bd = data.cost.breakdown || {};
-                costHtml += `<tr>
-                    <td>${plant}</td>
-                    <td class="text-right">${data.cost.costPerTon.toFixed(2)}</td>
-                    <td class="text-right">${data.cost.fixedCost.toFixed(2)}</td>
-                    <td class="text-right">${data.cost.variableCost.toFixed(2)}</td>
-                    <td class="text-right">${bd.rental?.toFixed(2) || '—'}</td>
-                    <td class="text-right">${bd.spareParts?.toFixed(2) || '—'}</td>
-                    <td class="text-right">${bd.manpowerDirect?.toFixed(2) || '—'}</td>
-                    <td class="text-right">${bd.manpowerAgency?.toFixed(2) || '—'}</td>
-                    <td class="text-right">${bd.fuel?.toFixed(2) || '—'}</td>
-                    <td class="text-right">${bd.coal?.toFixed(2) || '—'}</td>
-                    <td class="text-right">${bd.power?.toFixed(2) || '—'}</td>
-                    <td class="text-right">${bd.others?.toFixed(2) || '—'}</td>
-                </tr>`;
+                if (data && data.cost) {
+                    const bd = data.cost.breakdown || {};
+                    costHtml += `<tr>
+                        <td>${plant}</td>
+                        <td class="text-right">${(data.cost.costPerTon || 0).toFixed(2)}</td>
+                        <td class="text-right">${(data.cost.fixedCost || 0).toFixed(2)}</td>
+                        <td class="text-right">${(data.cost.variableCost || 0).toFixed(2)}</td>
+                        <td class="text-right">${bd.rental ? bd.rental.toFixed(2) : '—'}</td>
+                        <td class="text-right">${bd.spareParts ? bd.spareParts.toFixed(2) : '—'}</td>
+                        <td class="text-right">${bd.manpowerDirect ? bd.manpowerDirect.toFixed(2) : '—'}</td>
+                        <td class="text-right">${bd.manpowerAgency ? bd.manpowerAgency.toFixed(2) : '—'}</td>
+                        <td class="text-right">${bd.fuel ? bd.fuel.toFixed(2) : '—'}</td>
+                        <td class="text-right">${bd.coal ? bd.coal.toFixed(2) : '—'}</td>
+                        <td class="text-right">${bd.power ? bd.power.toFixed(2) : '—'}</td>
+                        <td class="text-right">${bd.others ? bd.others.toFixed(2) : '—'}</td>
+                    </tr>`;
+                }
             });
-            document.getElementById('costTable').innerHTML = costHtml;
+            document.getElementById('costTable').innerHTML = costHtml || '<tr><td colspan="12">No data</td></tr>';
 
             // Product Mix Table
             let mixHtml = '';
             Object.entries(plantData).forEach(([plant, data]) => {
-                const pm = data.productMix || {};
-                mixHtml += `<tr>
-                    <td>${plant}</td>
-                    <td class="text-right">${pm.pellet?.tph.toFixed(1) || '—'}</td>
-                    <td class="text-right">${pm.pellet?.costPerTon.toFixed(0) || '—'}</td>
-                    <td class="text-right">${pm.miniPellet?.tph.toFixed(1) || '—'}</td>
-                    <td class="text-right">${pm.miniPellet?.costPerTon.toFixed(0) || '—'}</td>
-                    <td class="text-right">${pm.microPellet?.tph.toFixed(1) || '—'}</td>
-                    <td class="text-right">${pm.microPellet?.costPerTon.toFixed(0) || '—'}</td>
-                    <td class="text-right">${pm.crumble?.tph.toFixed(1) || '—'}</td>
-                    <td class="text-right">${pm.crumble?.costPerTon.toFixed(0) || '—'}</td>
-                    <td class="text-right">${pm.mash?.tph.toFixed(1) || '—'}</td>
-                    <td class="text-right">${pm.mash?.costPerTon.toFixed(0) || '—'}</td>
-                </tr>`;
+                if (data && data.productMix) {
+                    const pm = data.productMix;
+                    mixHtml += `<tr>
+                        <td>${plant}</td>
+                        <td class="text-right">${pm.pellet?.tph ? pm.pellet.tph.toFixed(1) : '—'}</td>
+                        <td class="text-right">${pm.pellet?.costPerTon ? pm.pellet.costPerTon.toFixed(0) : '—'}</td>
+                        <td class="text-right">${pm.miniPellet?.tph ? pm.miniPellet.tph.toFixed(1) : '—'}</td>
+                        <td class="text-right">${pm.miniPellet?.costPerTon ? pm.miniPellet.costPerTon.toFixed(0) : '—'}</td>
+                        <td class="text-right">${pm.microPellet?.tph ? pm.microPellet.tph.toFixed(1) : '—'}</td>
+                        <td class="text-right">${pm.microPellet?.costPerTon ? pm.microPellet.costPerTon.toFixed(0) : '—'}</td>
+                        <td class="text-right">${pm.crumble?.tph ? pm.crumble.tph.toFixed(1) : '—'}</td>
+                        <td class="text-right">${pm.crumble?.costPerTon ? pm.crumble.costPerTon.toFixed(0) : '—'}</td>
+                        <td class="text-right">${pm.mash?.tph ? pm.mash.tph.toFixed(1) : '—'}</td>
+                        <td class="text-right">${pm.mash?.costPerTon ? pm.mash.costPerTon.toFixed(0) : '—'}</td>
+                    </tr>`;
+                }
             });
-            document.getElementById('productMixTable').innerHTML = mixHtml;
+            document.getElementById('productMixTable').innerHTML = mixHtml || '<tr><td colspan="11">No data</td></tr>';
 
             // Downtime Scorecard
-            document.getElementById('dt-scheduled').textContent = downtimeSummary.scheduled.toFixed(1);
-            document.getElementById('dt-unscheduled').textContent = downtimeSummary.unscheduled.toFixed(1);
-            document.getElementById('dt-changeover').textContent = downtimeSummary.changeover.toFixed(1);
-            document.getElementById('dt-major').textContent = downtimeSummary.major.toFixed(1);
+            const dts = downtimeSummary || {};
+            document.getElementById('dt-scheduled').textContent = ((dts.scheduled || 0).toFixed(1));
+            document.getElementById('dt-unscheduled').textContent = ((dts.unscheduled || 0).toFixed(1));
+            document.getElementById('dt-changeover').textContent = ((dts.changeover || 0).toFixed(1));
+            document.getElementById('dt-major').textContent = ((dts.major || 0).toFixed(1));
 
-            const dtRows = downtime.slice(-15).reverse().map(d =>
-                `<tr><td>${d.plant}</td><td>${d.date}</td><td>${d.issue}</td><td class="text-right">${d.duration.toFixed(1)}</td></tr>`
-            ).join('');
+            const dtRows = (downtime && downtime.length > 0) ? downtime.slice(-15).reverse().map(d =>
+                `<tr><td>${d.plant || ''}</td><td>${d.date || ''}</td><td>${d.issue || ''}</td><td class="text-right">${((d.duration || 0).toFixed(1))}</td></tr>`
+            ).join('') : '';
             document.getElementById('downtimeTable').innerHTML = dtRows || '<tr><td colspan="4">No data</td></tr>';
 
             // OEE Charts
-            createCircleChart('oeeChart', oee.total);
-            createCircleChart('performanceChart', oee.performance);
-            createCircleChart('qualityChart', oee.quality);
-            createCircleChart('availabilityChart', oee.availability);
+            if (oee) {
+                createCircleChart('oeeChart', oee.total || 0);
+                createCircleChart('performanceChart', oee.performance || 0);
+                createCircleChart('qualityChart', oee.quality || 0);
+                createCircleChart('availabilityChart', oee.availability || 0);
+            }
 
             // Plant Cards
             const plants = ['AC', 'PFMIS', 'HOREB', 'ARGAO', 'BUKID', 'CCPC', 'SOUTH'];
             let cardHtml = '';
             plants.forEach(plant => {
                 const data = plantData[plant];
-                cardHtml += `
-                    <div class="plant-card">
-                        <div class="plant-name">● ${plant}</div>
-                        <div class="plant-output">${data.production.total.toFixed(1)}</div>
-                        <div class="plant-output-unit">MT</div>
-                        <div class="plant-metrics">
-                            <div class="metric-row">
-                                <span class="metric-label">Capacity</span>
-                                <span class="metric-value">${data.quality.capacity.toFixed(0)}%</span>
-                            </div>
-                            <div class="metric-row">
-                                <span class="metric-label">Quality</span>
-                                <span class="metric-value">${data.quality.quality.toFixed(1)}%</span>
-                            </div>
-                            <div class="metric-row">
-                                <span class="metric-label">kWh/ton</span>
-                                <span class="metric-value">${data.utilities.kwhTon.toFixed(2)}</span>
-                            </div>
-                            <div class="metric-row">
-                                <span class="metric-label">L/ton</span>
-                                <span class="metric-value">${data.utilities.fuelTon.toFixed(2)}</span>
+                if (data) {
+                    const prodTotal = data.production?.total || 0;
+                    const capacity = data.quality?.capacity || 0;
+                    const quality = data.quality?.quality || 0;
+                    const kwhTon = data.utilities?.kwhTon || 0;
+                    const fuelTon = data.utilities?.fuelTon || 0;
+
+                    cardHtml += `
+                        <div class="plant-card">
+                            <div class="plant-name">● ${plant}</div>
+                            <div class="plant-output">${prodTotal.toFixed(1)}</div>
+                            <div class="plant-output-unit">MT</div>
+                            <div class="plant-metrics">
+                                <div class="metric-row">
+                                    <span class="metric-label">Capacity</span>
+                                    <span class="metric-value">${capacity.toFixed(0)}%</span>
+                                </div>
+                                <div class="metric-row">
+                                    <span class="metric-label">Quality</span>
+                                    <span class="metric-value">${quality.toFixed(1)}%</span>
+                                </div>
+                                <div class="metric-row">
+                                    <span class="metric-label">kWh/ton</span>
+                                    <span class="metric-value">${kwhTon.toFixed(2)}</span>
+                                </div>
+                                <div class="metric-row">
+                                    <span class="metric-label">L/ton</span>
+                                    <span class="metric-value">${fuelTon.toFixed(2)}</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
             });
             document.getElementById('plantCards').innerHTML = cardHtml;
         }
