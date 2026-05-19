@@ -344,14 +344,14 @@
         async function loadData() {
             showStatus('⟳ Loading data...', 'loading');
             try {
-                const response = await fetch('http://localhost:3000/api/data');
+                const response = await fetch('/api/data');
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
                 dashData = await response.json();
                 showStatus('✓ Data loaded successfully', 'success');
                 renderDashboard();
             } catch (error) {
-                showStatus(`❌ Error: ${error.message}. Make sure backend is running: node vienovo-backend.js`, 'error');
+                showStatus(`❌ Error: ${error.message}. Verifying backend and Google Sheets access...`, 'error');
                 console.error(error);
             }
         }

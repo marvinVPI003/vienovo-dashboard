@@ -1,10 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
+const path = require('path');
 const app = express();
 
 app.use(cors());
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname)));
 
 const CSV_URLS = {
   mrDaily: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRRx7S_rqgygPQifVep4DtnDFK8gGjAPVbrzCq6sCJcTF6omIGXb73iK8mQZoZjOgUq8CnZ9t7fR_2a/pub?gid=749345665&single=true&output=csv',
