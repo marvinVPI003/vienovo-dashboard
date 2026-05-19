@@ -1,10 +1,10 @@
 {
   "buildCommand": "npm install",
   "installCommand": "npm install",
-  "functions": {
-    "api/data.js": {
-      "memory": 1024,
-      "maxDuration": 60
-    }
-  }
+  "outputDirectory": ".",
+  "regions": ["sin1"],
+  "routes": [
+    { "src": "/vienovo-dashboard-vpi.html", "dest": "/vienovo-dashboard-vpi.html" },
+    { "src": "/(.*)", "dest": "/vienovo-dashboard-vpi.html" }
+  ]
 }
