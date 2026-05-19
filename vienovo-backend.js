@@ -69,12 +69,16 @@ app.get('/api/data', async (req, res) => {
       const pcDataForPlant = pcDaily.filter(r => r.Plant && r.Plant.includes(plant));
       const mcosDataForPlant = mcosDaily.filter(r => r.Plant && r.Plant.includes(plant));
 
-      // Get the most recent row with actual data (non-zero output)
+      // Get the most recent row with actual data (check total product output)
       let mrLatest = {};
       for (let i = mrDataForPlant.length - 1; i >= 0; i--) {
         const row = mrDataForPlant[i];
-        const testOutput = parseFloat(getCellValue(row, 'AZ')) || 0;
-        if (testOutput > 0 || i === 0) {
+        // Check total output: Pellet (BB) + Crumble (BC) + Mash (BD)
+        const pellet = parseFloat(getCellValue(row, 'BB')) || 0;
+        const crumble = parseFloat(getCellValue(row, 'BC')) || 0;
+        const mash = parseFloat(getCellValue(row, 'BD')) || 0;
+        const totalOutput = pellet + crumble + mash;
+        if (totalOutput > 0 || i === 0) {
           mrLatest = row;
           break;
         }
