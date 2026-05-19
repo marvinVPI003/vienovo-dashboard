@@ -69,7 +69,17 @@ app.get('/api/data', async (req, res) => {
       const pcDataForPlant = pcDaily.filter(r => r.Plant && r.Plant.includes(plant));
       const mcosDataForPlant = mcosDaily.filter(r => r.Plant && r.Plant.includes(plant));
 
-      const mrLatest = mrDataForPlant[mrDataForPlant.length - 1] || {};
+      // Get the most recent row with actual data (non-zero output)
+      let mrLatest = {};
+      for (let i = mrDataForPlant.length - 1; i >= 0; i--) {
+        const row = mrDataForPlant[i];
+        const testOutput = parseFloat(getCellValue(row, 'AZ')) || 0;
+        if (testOutput > 0 || i === 0) {
+          mrLatest = row;
+          break;
+        }
+      }
+
       const pcLatest = pcDataForPlant[pcDataForPlant.length - 1] || {};
       const mcosLatest = mcosDataForPlant[mcosDataForPlant.length - 1] || {};
 
